@@ -112,9 +112,24 @@ $langs->load("cashdesk");
 				<td>
 				<input class="texte1_off" type="text" name="txtStock" value="<?php echo $obj_facturation->stock() ?>" disabled />
 				</td>
-				<!-- Show unit price -->
-				<?php // TODO Remove the disabled and use this value when adding product into cart ?>
-				<td><input class="texte1_off" type="text" name="txtPrixUnit" value="<?php echo price2num($obj_facturation->prix(), 'MU'); ?>" onchange="javascript: modif();" /></td>
+				<?php
+				//~ Inicio mod cambio precio en tpv
+				include_once DOL_DOCUMENT_ROOT.'/cashdesk/modfis/con_fiscal.php';
+				if ($mod_precio == "1"){
+				?>
+					<!-- Show unit price -->
+					<?php // TODO Remove the disabled and use this value when adding product into cart ?>
+					<td><input class="texte1_off" type="text" name="txtPrixUnit" value="<?php echo price2num($obj_facturation->prix(), 'MU'); ?>" onchange="javascript: modif();" /></td>
+				<?php
+				}else{
+				?>
+					<!-- Show unit price -->
+					<?php // TODO Remove the disabled and use this value when adding product into cart ?>
+					<td><input class="texte1_off" type="text" name="txtPrixUnit" value="<?php echo price2num($obj_facturation->prix(), 'MU'); ?>" onchange="javascript: modif();" disabled /></td>
+				<?php
+				}
+				//~ Fin mod cambio precio en tpv
+				?>
 				<td></td>
     			<!-- Choix de la remise -->
     			<td><input class="texte1" type="text" id="txtRemise" name="txtRemise" value="0" onkeyup="javascript: modif();" onfocus="javascript: this.select();"/>
