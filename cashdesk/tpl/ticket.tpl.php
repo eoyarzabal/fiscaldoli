@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /* Copyright (C) 2007-2008 Jeremie Ollivier    <jeremie.o@laposte.net>
  * Copyright (C) 2011      Laurent Destailleur <eldy@users.sourceforge.net>
  * Copyright (C) 2012      Marcos García       <marcosgdf@gmail.com>
@@ -39,6 +39,8 @@ switch($tipopago){
 		$tipopago='Efectivo';
 	break;	
 }
+switch ($tfc){
+	case "0":
 ?>
 <html>
 <head>
@@ -107,10 +109,6 @@ body {
 </head>
 
 <body>
-<?php
-switch ($tfc){
-	case "0":
-?>	
 <div class="entete">
 <div class="logo"><?php print '<img src="'.DOL_URL_ROOT.'/viewimage.php?modulepart=companylogo&amp;file='.urlencode('/thumbs/'.$mysoc->logo_small).'">'; ?>
 </div>
@@ -169,6 +167,9 @@ echo '<tr><th class="nowrap">'.$langs->trans("TotalTTC").'</th><td class="nowrap
 <script type="text/javascript">
 	window.print();
 </script>
+</body>
+</html>
+
 <?php
 
 	break;	
@@ -179,27 +180,15 @@ $company2=new Societe($db);
 $company2->fetch($_SESSION["CASHDESK_ID_THIRDPARTY"]);
 $dae=date("Y-m-d-H-i-s");
 $lugar="./modfis/fact/factura$facid.py";
-$fp = fopen("$lugar","a+");
+$nam="factura$facid.py";
+$fp = fopen("$lugar","w");
 //~ Inicio FACTURA A
 if($company2->typent_code == "A"){
-	//printer.openBillTicket("A", "NOMBRE", "DIRECCION", "23281666789", "C", "I")
 	$fa_ivaes = "I";
 	$fa_cliente = $company2->name;
 	$fa_direccion = $company2->address;
 	$fa_cuit = $company2->idprof1;
 	$fa_letra = $company2->typent_code;
-	echo "<h3>Ticket Factura A</h3>";
-	//~ echo "Cliente: ".$fa_cliente;
-	//~ echo "<br>";
-	//~ echo "Direccion: ".$fa_direccion;
-	//~ echo "<br>";
-	//~ echo "CUIT: ".$fa_cuit;
-	//~ echo "<br>";
-	//~ echo "Letra: ".$fa_letra;
-	//~ echo "<br>";
-	//~ echo "Cond: ".$fa_ivaes;
-	//printer.openBillTicket("$fa_letra", "$fa_cliente", "$fa_direccion", "$fa_cuit", "C", "$fa_ivaes")
-
 fwrite($fp,"#! /usr/bin/env python
 # -*- coding: iso-8859-1 -*-
 import sys
@@ -208,32 +197,10 @@ print \"Imprimiendo con Impresora $marca $modelo\"
 printer = $imp(deviceFile=\"$puerto\", model=\"$modelo\", dummy=False)
 printer.openBillTicket(\"$fa_letra\", \"$fa_cliente\", \"$fa_direccion\", \"$fa_cuit\", \"C\", \"$fa_ivaes\")
 ");
-echo "<a href='./$lugar' id='autoid'>IF</a> - ";
-?>
-<a href="#"
-	onclick="javascript: window.close(); return(false);"><?php echo $langs->trans("Close"); ?></a>
-<br>
 
-<table class="liste_articles">
-	<tr class="titres">
-		<th>Item</th>
-		<th>Cant</th>
-		<th>P.U.</th>
-		<th>IVA</th>
-		<th>Desc</th>
-		<th>Total</th>
-	</tr>
-
-	<?php
 	$tab=array();
     $tab = $_SESSION['poscart'];
     $tab_size=count($tab);
-    //~ Ejemplo
-    //~ 2 x $398 -45% = $437,8 (SIN IVA)
-	//~ 1 x $825 = $825 (SIN IVA)
-	//~ Subtotal: 	$1.262,80
-	//~ IVA: 	$0
-	//~ TOTAL: 	$1.262,80
     for($i=0;$i < $tab_size;$i++)
     {
         $remise = $tab[$i]['remise'];
@@ -241,30 +208,18 @@ echo "<a href='./$lugar' id='autoid'>IF</a> - ";
         $cann = $tab[$i]['qte'];
         $prec_siva_cann = ($tab[$i]['total_ttc'] + $remise )/ $cann;
         $prec_siva = $prec_siva_cann;
-        //~ $prec_prix = $tab[$i]['prix'];
-        //~ echo "prec".$prec."<br>";
-        //~ echo "precsiva".$prec_siva."<br>";
-        //~ echo "prix".$prec_prix."<br>";
         $perc2 = $tab[$i]['remise_percent'];
         $iv = $object->lines[$i]->tva_tx;
         $nomb2 = $tab[$i]['label'];
         $nomb = substr($nomb2, 0, 15);
-        echo ('<tr><td>'.$nomb2.'</td><td>'.$cann.'</td><td>$'.price(price2num($prec_siva,'MT'),0,$langs,0,0,-1).'</td><td>'.$iv.'</td><td>'.$perc2.'%</td><td class="total">$'.price(price2num($prec,'MT'),0,$langs,0,0,-1).'</td></tr>'."\n");
-        
-        //~ $prec2 = price(price2num($tab[$i]['price'],'MU'));
-        //~ $prec = str_replace(',', '.', $prec2);
         $des = 0;
         $subb = ($cann * $prec_siva) + ($iv/100 * $cann * $prec_siva); // (2 * 398) + (0/100 * 2 * 398) = 796
         if ($perc2 > 0 ){
 			$descc = $subb - ($perc2/100 * $subb); // 796 - (45/100 * 796) = 437,8
-			//~ $des = round($descc,2);
 			$des = $remise;
 		}else{
 			$des = "0";
 		}
-        
-        //~ $perc = $descc -;
-        
 fwrite($fp,"printer.addItem(\"$nomb\", $cann, $prec_siva, $iv, discount=$des, discountDescription=\"Dto $perc2%\")
 ");
     }
@@ -273,79 +228,18 @@ fwrite($fp,"printer.addItem(\"$nomb\", $cann, $prec_siva, $iv, discount=$des, di
 fwrite($fp,"printer.addPayment(\"$tipopago\", $entr)
 printer.closeDocument()
 ");
-//~ if ($desde == "hasarPrinter"){
-//~ fwrite($fp,"bear = inicial[6]
-//~ number2 = int(number)
-//~ final = 'TFB000'+str(bear) +'-'+str(number)
-//~ cadena=final
-//~ ");	
-//~ }else{
-//~ fwrite($fp,"bear = int(inicial[3])
-//~ number2 = int(number)
-//~ final = 'TFB000'+str(bear) +'-'+str(number)
-//~ cadena=final
-//~ ");
-//~ }
-//~ fwrite($fp,"import MySQLdb
-//~ db=MySQLdb.connect($connn)
-//~ cursor = db.cursor()
-//~ cursor.execute(\"UPDATE llx_facture SET facnumber = %s WHERE rowid = $facid\",(cadena,))
-//~ db.commit()
-//~ cursor.close()
-//~ ");
-//~ fclose($fp);
-?>
-</table>
-
-<table class="totaux">
-<?php
-echo '<tr><th class="nowrap">Subtotal: </th><td class="nowrap">$'.price(price2num($obj_facturation->prixTotalHt(),'MT'),'',$langs,0,-1,-1)."</td></tr>\n";
-echo '<tr><th class="nowrap">IVA: </th><td class="nowrap">$'.price(price2num($obj_facturation->montantTva(),'MT'),'',$langs,0,-1,-1)."</td></tr>\n";
-echo '<tr><th class="nowrap"><b>TOTAL: </b></th><td class="nowrap">$'.price(price2num($obj_facturation->prixTotalTtc(),'MT'),'',$langs,0,-1,-1)."</td></tr>\n";
-echo '<tr><th>Entrega: </th><td>$'.$entr."</td></tr>\n";
-echo '<tr><th><h2>VUELTO: </h2></th><td><h2>$'.$vuel."</td></tr></h2>\n";
-?>
-</table>
-
-<script type="text/javascript">
-/*
-	window.print();
-*/
-window.setTimeout('clickit()',1000);
-function clickit(){
-   location.href = document.getElementById('autoid');
-}
-window.setTimeout('vuelve()',60000);
-function vuelve(){
-/*
-   location.href = '../index.php/sales';
-*/
-   window.close();
-}
-</script>
-<?php
+header("Content-disposition: attachment; filename=".$nam);
+header('Content-type: application/octet-stream');
+readfile($lugar);
 //~ FIN FACTURA A
 //~ Inicio FACTURA B EXENTO
 
 }elseif($company2->typent_code == "EX"){
-	//printer.openBillTicket("B", "NOMBRE", "DIRECCION", "23281666789", "C", "E")
 	$fa_ivaes = "E";
 	$fa_cliente = $company2->name;
 	$fa_direccion = $company2->address;
 	$fa_cuit = $company2->idprof1;
 	$fa_letra = "B";
-	echo "<h3>Ticket B (Exento)</h3>";
-	//~ echo "Cliente: ".$fa_cliente;
-	//~ echo "<br>";
-	//~ echo "Direccion: ".$fa_direccion;
-	//~ echo "<br>";
-	//~ echo "CUIT: ".$fa_cuit;
-	//~ echo "<br>";
-	//~ echo "Letra: ".$fa_letra;
-	//~ echo "<br>";
-	//~ echo "Cond: ".$fa_ivaes;
-	//printer.openBillTicket("$fa_letra", "$fa_cliente", "$fa_direccion", "$fa_cuit", "C", "$fa_ivaes")
-
 fwrite($fp,"#! /usr/bin/env python
 # -*- coding: iso-8859-1 -*-
 import sys
@@ -354,32 +248,10 @@ print \"Imprimiendo con Impresora $marca $modelo\"
 printer = $imp(deviceFile=\"$puerto\", model=\"$modelo\", dummy=False)
 printer.openBillTicket(\"$fa_letra\", \"$fa_cliente\", \"$fa_direccion\", \"$fa_cuit\", \"C\", \"$fa_ivaes\")
 ");
-echo "<a href='./$lugar' id='autoid'>IF</a> - ";
-?>
-<a href="#"
-	onclick="javascript: window.close(); return(false);"><?php echo $langs->trans("Close"); ?></a>
-<br>
 
-<table class="liste_articles">
-	<tr class="titres">
-		<th>Item</th>
-		<th>Cant</th>
-		<th>P.U.</th>
-		<th>IVA</th>
-		<th>Desc</th>
-		<th>Total</th>
-	</tr>
-
-	<?php
 	$tab=array();
     $tab = $_SESSION['poscart'];
     $tab_size=count($tab);
-    //~ Ejemplo
-    //~ 2 x $398 -45% = $437,8 (SIN IVA)
-	//~ 1 x $825 = $825 (SIN IVA)
-	//~ Subtotal: 	$1.262,80
-	//~ IVA: 	$0
-	//~ TOTAL: 	$1.262,80
     for($i=0;$i < $tab_size;$i++)
     {
         $remise = $tab[$i]['remise'];
@@ -387,30 +259,18 @@ echo "<a href='./$lugar' id='autoid'>IF</a> - ";
         $cann = $tab[$i]['qte'];
         $prec_siva_cann = ($tab[$i]['total_ttc'] + $remise )/ $cann;
         $prec_siva = $prec_siva_cann;
-        //~ $prec_prix = $tab[$i]['prix'];
-        //~ echo "prec".$prec."<br>";
-        //~ echo "precsiva".$prec_siva."<br>";
-        //~ echo "prix".$prec_prix."<br>";
         $perc2 = $tab[$i]['remise_percent'];
         $iv = $object->lines[$i]->tva_tx;
         $nomb2 = $tab[$i]['label'];
         $nomb = substr($nomb2, 0, 15);
-        echo ('<tr><td>'.$nomb2.'</td><td>'.$cann.'</td><td>$'.price(price2num($prec_siva,'MT'),0,$langs,0,0,-1).'</td><td>'.$iv.'</td><td>'.$perc2.'%</td><td class="total">$'.price(price2num($prec,'MT'),0,$langs,0,0,-1).'</td></tr>'."\n");
-        
-        //~ $prec2 = price(price2num($tab[$i]['price'],'MU'));
-        //~ $prec = str_replace(',', '.', $prec2);
         $des = 0;
         $subb = ($cann * $prec_siva) + ($iv/100 * $cann * $prec_siva); // (2 * 398) + (0/100 * 2 * 398) = 796
         if ($perc2 > 0 ){
 			$descc = $subb - ($perc2/100 * $subb); // 796 - (45/100 * 796) = 437,8
-			//~ $des = round($descc,2);
 			$des = $remise;
 		}else{
 			$des = "0";
 		}
-        
-        //~ $perc = $descc -;
-        
 fwrite($fp,"printer.addItem(\"$nomb\", $cann, $prec_siva, $iv, discount=$des, discountDescription=\"Dto $perc2%\")
 ");
     }
@@ -419,57 +279,9 @@ fwrite($fp,"printer.addItem(\"$nomb\", $cann, $prec_siva, $iv, discount=$des, di
 fwrite($fp,"printer.addPayment(\"$tipopago\", $entr)
 printer.closeDocument()
 ");
-//~ if ($desde == "hasarPrinter"){
-//~ fwrite($fp,"bear = inicial[6]
-//~ number2 = int(number)
-//~ final = 'TFB000'+str(bear) +'-'+str(number)
-//~ cadena=final
-//~ ");	
-//~ }else{
-//~ fwrite($fp,"bear = int(inicial[3])
-//~ number2 = int(number)
-//~ final = 'TFB000'+str(bear) +'-'+str(number)
-//~ cadena=final
-//~ ");
-//~ }
-//~ fwrite($fp,"import MySQLdb
-//~ db=MySQLdb.connect($connn)
-//~ cursor = db.cursor()
-//~ cursor.execute(\"UPDATE llx_facture SET facnumber = %s WHERE rowid = $facid\",(cadena,))
-//~ db.commit()
-//~ cursor.close()
-//~ ");
-//~ fclose($fp);
-?>
-</table>
-
-<table class="totaux">
-<?php
-echo '<tr><th class="nowrap">Subtotal: </th><td class="nowrap">$'.price(price2num($obj_facturation->prixTotalHt(),'MT'),'',$langs,0,-1,-1)."</td></tr>\n";
-echo '<tr><th class="nowrap">IVA: </th><td class="nowrap">$'.price(price2num($obj_facturation->montantTva(),'MT'),'',$langs,0,-1,-1)."</td></tr>\n";
-echo '<tr><th class="nowrap"><b>TOTAL: </b></th><td class="nowrap">$'.price(price2num($obj_facturation->prixTotalTtc(),'MT'),'',$langs,0,-1,-1)."</td></tr>\n";
-echo '<tr><th>Entrega: </th><td>$'.$entr."</td></tr>\n";
-echo '<tr><th><h2>VUELTO: </h2></th><td><h2>$'.$vuel."</td></tr></h2>\n";
-?>
-</table>
-
-<script type="text/javascript">
-/*
-	window.print();
-*/
-window.setTimeout('clickit()',1000);
-function clickit(){
-   location.href = document.getElementById('autoid');
-}
-window.setTimeout('vuelve()',60000);
-function vuelve(){
-/*
-   location.href = '../index.php/sales';
-*/
-   window.close();
-}
-</script>
-<?php
+header("Content-disposition: attachment; filename=".$nam);
+header('Content-type: application/octet-stream');
+readfile($lugar);
 //~ FIN FACTURA B EXENTO
 }else{
 // Inicio FACT B CONSUMIDOR FINAL
@@ -483,32 +295,10 @@ number = printer.getLastNumber(\"B\") + 1
 print \"imprimiendo la FC \", number
 printer.openTicket()
 ");
-echo "<a href='./$lugar' id='autoid'>IF</a> - ";
-?>
-<a href="#"
-	onclick="javascript: window.close(); return(false);"><?php echo $langs->trans("Close"); ?></a>
-<br>
 
-<table class="liste_articles">
-	<tr class="titres">
-		<th>Item</th>
-		<th>Cant</th>
-		<th>P.U.</th>
-		<th>IVA</th>
-		<th>Desc</th>
-		<th>Total</th>
-	</tr>
-
-	<?php
 	$tab=array();
     $tab = $_SESSION['poscart'];
     $tab_size=count($tab);
-    //~ Ejemplo
-    //~ 2 x $398 -45% = $437,8 (SIN IVA)
-	//~ 1 x $825 = $825 (SIN IVA)
-	//~ Subtotal: 	$1.262,80
-	//~ IVA: 	$0
-	//~ TOTAL: 	$1.262,80
     for($i=0;$i < $tab_size;$i++)
     {
         $remise = $tab[$i]['remise'];
@@ -516,30 +306,18 @@ echo "<a href='./$lugar' id='autoid'>IF</a> - ";
         $cann = $tab[$i]['qte'];
         $prec_siva_cann = ($tab[$i]['total_ttc'] + $remise )/ $cann;
         $prec_siva = $prec_siva_cann;
-        //~ $prec_prix = $tab[$i]['prix'];
-        //~ echo "prec".$prec."<br>";
-        //~ echo "precsiva".$prec_siva."<br>";
-        //~ echo "prix".$prec_prix."<br>";
         $perc2 = $tab[$i]['remise_percent'];
         $iv = $object->lines[$i]->tva_tx;
         $nomb2 = $tab[$i]['label'];
         $nomb = substr($nomb2, 0, 15);
-        echo ('<tr><td>'.$nomb2.'</td><td>'.$cann.'</td><td>$'.price(price2num($prec_siva,'MT'),0,$langs,0,0,-1).'</td><td>'.$iv.'</td><td>'.$perc2.'%</td><td class="total">$'.price(price2num($prec,'MT'),0,$langs,0,0,-1).'</td></tr>'."\n");
-        
-        //~ $prec2 = price(price2num($tab[$i]['price'],'MU'));
-        //~ $prec = str_replace(',', '.', $prec2);
         $des = 0;
         $subb = ($cann * $prec_siva) + ($iv/100 * $cann * $prec_siva); // (2 * 398) + (0/100 * 2 * 398) = 796
         if ($perc2 > 0 ){
 			$descc = $subb - ($perc2/100 * $subb); // 796 - (45/100 * 796) = 437,8
-			//~ $des = round($descc,2);
 			$des = $remise;
 		}else{
 			$des = "0";
 		}
-        
-        //~ $perc = $descc -;
-        
 fwrite($fp,"printer.addItem(\"$nomb\", $cann, $prec_siva, $iv, discount=$des, discountDescription=\"Dto $perc2%\")
 ");
     }
@@ -548,64 +326,13 @@ fwrite($fp,"printer.addItem(\"$nomb\", $cann, $prec_siva, $iv, discount=$des, di
 fwrite($fp,"printer.addPayment(\"$tipopago\", $entr)
 printer.closeDocument()
 ");
-//~ if ($desde == "hasarPrinter"){
-//~ fwrite($fp,"bear = inicial[6]
-//~ number2 = int(number)
-//~ final = 'TFB000'+str(bear) +'-'+str(number)
-//~ cadena=final
-//~ ");	
-//~ }else{
-//~ fwrite($fp,"bear = int(inicial[3])
-//~ number2 = int(number)
-//~ final = 'TFB000'+str(bear) +'-'+str(number)
-//~ cadena=final
-//~ ");
-//~ }
-//~ fwrite($fp,"import MySQLdb
-//~ db=MySQLdb.connect($connn)
-//~ cursor = db.cursor()
-//~ cursor.execute(\"UPDATE llx_facture SET facnumber = %s WHERE rowid = $facid\",(cadena,))
-//~ db.commit()
-//~ cursor.close()
-//~ ");
-//~ fclose($fp);
-?>
-</table>
 
-<table class="totaux">
-<?php
-echo '<tr><th class="nowrap">Subtotal: </th><td class="nowrap">$'.price(price2num($obj_facturation->prixTotalHt(),'MT'),'',$langs,0,-1,-1)."</td></tr>\n";
-echo '<tr><th class="nowrap">IVA: </th><td class="nowrap">$'.price(price2num($obj_facturation->montantTva(),'MT'),'',$langs,0,-1,-1)."</td></tr>\n";
-echo '<tr><th class="nowrap"><b>TOTAL: </b></th><td class="nowrap">$'.price(price2num($obj_facturation->prixTotalTtc(),'MT'),'',$langs,0,-1,-1)."</td></tr>\n";
-echo '<tr><th>Entrega: </th><td>$'.$entr."</td></tr>\n";
-echo '<tr><th><h2>VUELTO: </h2></th><td><h2>$'.$vuel."</td></tr></h2>\n";
-?>
-</table>
-
-<script type="text/javascript">
-/*
-	window.print();
-*/
-window.setTimeout('clickit()',1000);
-function clickit(){
-   location.href = document.getElementById('autoid');
-}	
-window.setTimeout('vuelve()',60000);
-function vuelve(){
-/*
-   location.href = '../index.php/sales';
-*/
-   window.close();
-}
-</script>
-
-<?php
+header("Content-disposition: attachment; filename=".$nam);
+header('Content-type: application/octet-stream');
+readfile($lugar);
 }//~ Fin fact B CONSUMIDOR FINAL
 break;
 default: 
 	echo "No se ha especificado";
 		} //Fin switchcase
 ?>
-
-</body>
-</html>

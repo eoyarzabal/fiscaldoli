@@ -41,10 +41,13 @@ $langs->load("bills");
 */
 	function popupTicket2()
 	{
-		largeur = 500;
-		hauteur = 500;
-		opt = 'width='+largeur+', height='+hauteur+', left='+(screen.width - largeur)/2+', top='+(screen.height-hauteur)/2+'';
-		window.open('validation_ticket.php?facid=<?php echo $_GET['facid']; ?>&fis=1', '<?php echo $langs->trans('PrintTicket') ?>', opt);
+		// largeur = 500;
+		// hauteur = 500;
+		// opt = 'width='+largeur+', height='+hauteur+', left='+(screen.width - largeur)/2+', top='+(screen.height-hauteur)/2+'';
+		//window.open('validation_ticket.php?facid=<?php echo $_GET['facid']; ?>&fis=1', '<?php echo $langs->trans('PrintTicket') ?>', opt);
+		// window.location('validation_ticket.php?facid=<?php echo $_GET['facid']; ?>&fis=1', '<?php echo $langs->trans('PrintTicket') ?>');
+		// setTimeout (window.close, 5000);
+		// "location.href='pageurl.html';"
 	}
 
 /*
@@ -56,21 +59,7 @@ $langs->load("bills");
 <!--<p><a class="lien1" href="<?php echo DOL_URL_ROOT ?>/compta/facture.php?action=builddoc&facid=<?php echo $_GET['facid']; ?>" target="_blank"><?php echo $langs->trans("ShowInvoice"); ?></a></p>-->
 <p><a class="lien1" href="#" onclick="Javascript: popupTicket(); return(false);"><img src="./modfis/imp1.png"><br><strong>Impresi&oacute;n STANDARD</strong></a></p>
 <hr>
-<?php
-//~ Inicio Modif para usar factura fiscal al final
-include_once DOL_DOCUMENT_ROOT.'/cashdesk/modfis/con_fiscal.php';
-if ($cierres == "1"){
-?>
-	<p><a class="lien1" href="#" onclick="Javascript: popupTicket2(); return(false);"><img src="./modfis/impfis.png"><br>Imprimir <strong>TICKET FISCAL</strong></a></p>
-<?php
-}else{
-?>
-	<p><a class="lien1" href="#" onclick="Javascript: popupTicket4(); return(false);"><img src="./modfis/impfis.png"><br>Imprimir <strong>TICKET FISCAL</strong></a></p>
-<?php
-}
-//~ FIN Modif para usar factura fiscal al final
-
-?>	
+<p><a class="lien1" href="#" onclick="location.href='validation_ticket.php?facid=<?php echo $_GET['facid']; ?>&fis=1';"><img src="./modfis/impfis.png"><br>Imprimir <strong>TICKET FISCAL</strong></a></p>
 <hr>
 <p><a class="lien1" href="#" onclick="Javascript: popupTicket3(); return(false);"><img src="./modfis/fe.png"><br>Imp. <strong>FACTURA ELECTRONICA</strong></a></p>
 <hr>
