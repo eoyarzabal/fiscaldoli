@@ -65,10 +65,15 @@ print '<ul class="menu">';
 print '<li class="menu_choix1"><a href="affIndex.php?menu=facturation&id=NOUV"><span>'.$langs->trans("NewSell").'</span></a></li>';
 // Open new tab on backoffice (this is not a disconnect from POS)
 print '<li class="menu_choix2"><a href=".." target="backoffice"><span>'.$langs->trans("BackOffice").'</span></a></li>';
-// Cierre X
-print '<center><a href="./modfis/cierrex.php"><b>Cierre X</b></a> | <a href="./modfis/cierrez.php"><b>Cierre Z</a></b></center>';
-// Cierre Z
-//~ print '<center></center>';
+
+//~ Inicio Modif para agregar cierres en menu
+include_once DOL_DOCUMENT_ROOT.'/cashdesk/modfis/con_fiscal.php';
+if ($cierres == "1"){
+	//~ Cierre X y Z
+	print '<center><a href="./modfis/cierrex.php"><b>Cierre X</b></a> | <a href="./modfis/cierrez.php"><b>Cierre Z</a></b></center>';
+}
+//~ Fin Modif para agregar cierres en menu
+
 // Disconnect
 print '<li class="menu_choix0">'.$langs->trans("User").': '.$_SESSION['firstname'].' '.$_SESSION['lastname'];
 print ' <a href="deconnexion.php">'.img_picto($langs->trans('Logout'), 'logout.png').'</a><br>';
